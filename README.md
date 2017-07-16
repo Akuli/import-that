@@ -4,8 +4,8 @@ This repository contains tutorials for writing bad Python code.
 
 Among other things, this tutorial will teach you how to write anti-PEP8
 code like `print ("Hello" ) ;` and annoy everyone who read your code.
-But more importantly, you will learn to do David Beazley style
-metaprogramming that only you can understand.
+But more importantly, you will learn to write David Beazley style
+metaprogramming code that other people don't understand.
 
 This repository is inspired by these things:
 - [seriously.dontusethiscode.com](http://seriously.dontusethiscode.com/)
