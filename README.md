@@ -24,6 +24,9 @@ class MutableString(list):
 def fix_code(code_bytes, decoding_errors):
     code_lines = list(map(MutableString, str(code_bytes, 'utf-8', decoding_errors).split('\n')))
     ...
+    # pylint: https://www.youtube.com/watch?v=th4Czv1j3F8
+    func_name = next(tokens); assert func_name[0] == tokenize.NAME
+    paren = next(tokens); assert paren[:2] == (tokenize.OP, '(')
 ```
 
 ## Fun Tutorials
