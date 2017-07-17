@@ -21,9 +21,9 @@ near enough for most things. It's missing lots of characters like ö or ß.
 
 At first, a common solution was to use the rest of our 256 combinations for
 other characters. The problem with this is that different characters would need
-to be added for different languages, and as a result, the *same*
-`range(128, 256)` number often meant *different* characters in a different
-character set.
+to be added for different languages, and as a result, the *same* number of
+`range(128, 256)` often meant *different* characters in different
+character sets.
 
 Nowadays [the Unicode standard][] assigns exactly one number to many characters,
 but most of these numbers are not in `range(256)` so we can't represent each

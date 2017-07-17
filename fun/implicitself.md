@@ -52,7 +52,7 @@ thinking about using that:
 >>> thing()
 {'b': 2, 'a': 1}
 >>> def thing():
-...     locals()['self'] = 123   # makes a dict, adds self to it, throws it away
+...     locals()['self'] = 123   # makes a new dict, adds self to it, throws it away
 ...     print(self)      # NameError :(
 ... 
 >>> thing()
@@ -62,7 +62,8 @@ NameError: name 'self' is not defined
 ```
 
 Python remembers which local variables each function can have, and changing them
-is not possible afterwards.
+is not possible afterwards. That's why `locals()` made a new dict of variables
+and returned that.
 
 ```python
 >>> def thing():
@@ -115,12 +116,10 @@ code to `that.py`:
 ```python
 import tokenize,io
 
-
 # this is a really good idiom, use this everywhere you can
 class MutableString(list):
     def __str__(self):
         return ''.join(self)
-
 
 def fix_code(code_bytes):
     code_lines = list(map(MutableString, str(code_bytes, 'utf-8').split('\n')))
@@ -184,15 +183,14 @@ too.
 ## The Encoding
 
 Next we'll add a convenient way to use the `implicit` keyword in our code.
-Modify your `fix_code` in `that.py` to also accept a new `encoding_errors`
+Modify your `fix_code` in `that.py` to also accept a new `decoding_errors`
 argument:
 
 ```python
-def fix_code(code_bytes, encoding_errors):
-    code_lines = list(map(MutableString, str(code_bytes, 'utf-8', encoding_errors).split('\n')))
+def fix_code(code_bytes, decoding_errors):
+    code_lines = list(map(MutableString, str(code_bytes, 'utf-8', decoding_errors).split('\n')))
     # rest of this function doesn't need to be changed
 ```
-
 
 Then delete the `if __name__ == '__main__'` thing and add some [basic codec
 stuff][encodings]:
@@ -295,4 +293,4 @@ Hello World!
 
 [ast]: ../boring/how-python-runs-code.md#ast
 [tokenize]: ../boring/how-python-runs-code.md#tokenizing
-[encoding]: ../boring/encodings.md#custom-encodings
+[encodings]: ../boring/encodings.md#custom-encodings
