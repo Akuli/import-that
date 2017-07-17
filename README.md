@@ -29,6 +29,23 @@ def fix_code(code_bytes, decoding_errors):
     paren = next(tokens); assert paren[:2] == (tokenize.OP, '(')
 ```
 
+And here's an example of the metaprogramming, from the same chapter:
+
+```python
+# coding=implicit
+
+class Thing:
+
+    implicit def __init__(name):
+        self.name = name
+
+    implicit def hello():
+        print("Hello %s!" % self.name)
+
+    async implicit def async_hello():
+        print("Hello %s!" % self.name)
+```
+
 ## Fun Tutorials
 - [Implicit self](fun/implicitself.md)
 
