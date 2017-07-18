@@ -3,33 +3,26 @@
 This repository contains tutorials for writing bad Python code. Among other
 things, you will learn some useless skills and bad habits:
 
-- writing David Beazley style metaprogramming code that only you can understand
+- writing David Beazley style metaprogramming code that only **you** can understand
 - violating [PEP 8][] and [PEP 20][]
-- [start writing classes](https://www.youtube.com/watch?v=o9pEzgHorH0)
+- [*start* writing classes](https://www.youtube.com/watch?v=o9pEzgHorH0)
 - and much more!
 
 [PEP 8]: https://www.python.org/dev/peps/pep-0008/
 [PEP 20]: https://www.python.org/dev/peps/pep-0020/
 
-Here's an example from [the implicitself chapter](fun/implicitself.md):
+Here's an example from [the f-string tutorial](fun/fstrings.md):
 
 ```python
-import tokenize,io
-
-# this is a really good idiom, use this everywhere you can
-class MutableString(list):
-    def __str__(self):
-        return ''.join(self)
-
-def fix_code(code_bytes, decoding_errors):
-    code_lines = list(map(MutableString, str(code_bytes, 'utf-8', decoding_errors).split('\n')))
-    ...
-    # pylint: https://www.youtube.com/watch?v=th4Czv1j3F8
-    func_name = next(tokens); assert func_name[0] == tokenize.NAME
-    paren = next(tokens); assert paren[:2] == (tokenize.OP, '(')
+import inspect,collections,codecs,sys,tokenize,io
+...
+# pylint: https://www.youtube.com/watch?v=th4Czv1j3F8
+assert( string.start[0] == string.end[0] == f.start[0] == f.end[0] ), "sorry, multi-line f-strings are not supported :("
+code_lines[ f.start[0] ][ f.start[1]:string.end[1] ] = '__import__("importlib").import_module(%r).do_the_f(%s)'%( __name__ , string.string )
 ```
 
-And here's an example of the metaprogramming, from the same chapter:
+And here's an example of the metaprogramming, taken from [the implicit self
+tutorial](fun/implicitself.md):
 
 ```python
 # coding=implicit
@@ -48,10 +41,12 @@ class Thing:
 
 ## Fun Tutorials
 - [Implicit self](fun/implicitself.md)
+- [Backwards Compatible f-strings](fun/fstrings.md)
 
 ## Boring explanation chapters
 - [Encodings](boring/encodings.md)
 - [How does Python run code?](boring/how-python-runs-code.md)
+- [Stack Frames](boring/stackframes.md)
 
 ## See also
 This repository is inspired by the work of other mad scientists :)

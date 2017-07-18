@@ -135,7 +135,6 @@ def fix_code(code_bytes):
                 # implicit is used as a variable name because it's not before a def
                 continue
 
-            # pylint: https://www.youtube.com/watch?v=th4Czv1j3F8
             func_name = next(tokens); assert func_name[0] == tokenize.NAME
             paren = next(tokens); assert paren[:2] == (tokenize.OP, '(')
 
@@ -175,10 +174,6 @@ class Thing:
 
 There's not much magic going on in this code. If you read [the boring tokenizing
 chapter][tokenize] you should have no trouble understanding this.
-
-This code also introduces a new pylint directive that can be useful when your
-linter hates your beautiful code. It works just as well with any other linter
-too.
 
 ## The Encoding
 
