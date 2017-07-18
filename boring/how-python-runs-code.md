@@ -36,6 +36,9 @@ yourself. It's usually easier to modify the code based on the tokens.
 
 ## AST
 
+Tokenizing is kind of like "here's a `(`", while the AST, or Abstract Syntax
+Tree, is more like "here's a function call".
+
 ```python
 >>> import ast
 >>> print(ast.dump(ast.parse("print('hello')")))
@@ -45,19 +48,21 @@ Module(body=[Expr(value=Call(func=Name(id='print', ctx=Load()), args=[Str(s='hel
 It's kind of hard to see what's going on. If we open that up a bit, it looks
 like this:
 
-    Module(
-        body=[
-            Expr(
-                value=Call(
-                    func=Name(id='print', ctx=Load()),
-                    args=[Str(s='hello')],
-                    keywords=[],
-                    starargs=None,
-                    kwargs=None
-                )
+```python
+Module(
+    body=[
+        Expr(
+            value=Call(
+                func=Name(id='print', ctx=Load()),
+                args=[Str(s='hello')],
+                keywords=[],
+                starargs=None,
+                kwargs=None
             )
-        ]
-    )
+        )
+    ]
+)
+```
 
 At this point we know that we have are calling (`Call`) a function that comes
 from a variable (`Name`) called `print`, and we're giving it the string
@@ -68,7 +73,7 @@ first. It doesn't jump directly from code to AST.
 
 Going from AST back to tokens or code is difficult, and usually it's best to
 avoid it. The AST isn't really useless though because the nodes contain
-information about where they are defined:
+information about where they are defined.
 
 ```python
 >>> the_call = ast.parse("print('hello')").body[0].value
@@ -90,9 +95,9 @@ There's more information about code objects below.
 
 ## Bytecode
 
-Next the AST is turned into something even more machine-readable and less
-human-friendly. It's not executed directly because it would be kind of complicated, and thus
-slow. Let's have a look at the bytecode:
+The AST is not executed directly because it would be kind of complicated, and
+thus slow. Let's have a look at a code object like the one we got from
+`compile()`:
 
 ```python
 >>> def thing():
@@ -110,7 +115,7 @@ b't\x00d\x01\x83\x01\x01\x00d\x00S\x00'
 (None, 'hello')
 ```
 
-There's also a module for printing a scary-looking table of what the `__code__` does:
+There's also a module for printing a spooky table of what the `__code__` does:
 
 ```python
 >>> import dis
@@ -124,7 +129,7 @@ There's also a module for printing a scary-looking table of what the `__code__` 
 ```
 
 No, you can't `import dat` even though you can `import this` and `import dis`.
-[lolcode][] is better than python.
+[LOLCODE][] is better than Python.
 
 I am not aware of anyone modifying the `__code__` of a function to make it
 behave differently. It would probably be difficult, and it's possible to do many
@@ -134,10 +139,10 @@ make something that relies on it some day.
 
 It's also possible to create new code objects:
 
-```python
+[comment]: # (github screws up syntax highlighting the help() output
+
+```
 >>> import types
->>> types.CodeType
-<class 'code'>
 >>> isinstance(thing.__code__, types.CodeType)
 True
 >>> help(types.CodeType)
@@ -149,7 +154,8 @@ class code(object)
  |        lnotab[, freevars[, cellvars]])
  |
  |  Create a code object.  Not for the faint of heart.
+...
 ```
 
-[lolcode]: https://en.wikipedia.org/wiki/LOLCODE
+[LOLCODE]: https://en.wikipedia.org/wiki/LOLCODE
 [the dis docs]: https://docs.python.org/3/library/dis.html
