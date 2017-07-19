@@ -11,35 +11,51 @@ things, you will learn some useless skills and bad habits:
 [PEP 8]: https://www.python.org/dev/peps/pep-0008/
 [PEP 20]: https://www.python.org/dev/peps/pep-0020/
 
-Here's an example from [the f-string tutorial](fun/fstrings.md):
+Here's an example from [the brace tutorial](fun/braces.md):
 
 ```python
-import inspect,collections,codecs,sys,tokenize,io
-...
-# pylint: https://www.youtube.com/watch?v=th4Czv1j3F8
-assert( string.start[0] == string.end[0] == f.start[0] == f.end[0] ), "sorry, multi-line f-strings are not supported :("
-code_lines[ f.start[0] ][ f.start[1]:string.end[1] ] = '__import__("importlib").import_module(%r).do_the_f(%s)'%( __name__ , string.string )
+import tokenize,io
+
+# beautiful, idiomatic and overall really pythonic utility
+# classes, use these everywhere you can
+class MutableString(list):
+     __str__ = lambda self: ''.join(self)
+class Stack(list):
+    push = list.append
+
+
+class _HandyDandyTokenIteratorThingyThing:
+    # handy dandy init
+    def __init__(self,tokens):
+        self.iterator=( t for t in tokens if not t[0] in{ tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT })
+        self._coming_up = None
+
+    # handy dandy property
+    @property
+    def coming_up(self):
+        ...
 ```
 
-And here's an example of the metaprogramming, taken from [the implicit self
-tutorial](fun/implicitself.md):
+And here's an example of the metaprogramming, taken from the same tutorial.
+**This file can be imported** after importing another file that does the magic.
 
 ```python
-# coding=implicit
-
-class Thing:
-
-    implicit def __init__(name):
-        self.name = name
-
-    implicit def hello():
-        print("Hello %s!" % self.name)
-
-    async implicit def async_hello():
-        print("Hello %s!" % self.name)
+# coding=braces
+class Thing {
+    def __init__(self, target) {
+        self.target = target;
+    }
+    def stuff(self) {
+        print("Hello %s!" % self.target);
+    }
+    async def async_stuff(self) {
+        print("Hello %s!" % self.target);
+    }
+}
 ```
 
 ## Fun Tutorials
+- [Python with Braces](fun/braces.md)
 - [Implicit self](fun/implicitself.md)
 - [Backwards Compatible f-strings](fun/fstrings.md)
 
