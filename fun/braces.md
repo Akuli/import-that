@@ -296,9 +296,12 @@ happens if we run it:
     2
     3
 
-Great! Now we just need to add some [basic codec
-stuff](../boring/encodings.md#custom-encodings). Delete the `fix_code` function
-and everything after it, and add this:
+Great! Now we just need some [basic codec
+stuff](../boring/encodings.md#custom-encodings) and we're done.
+
+## The Codec
+
+Delete the `fix_code` function and everything after it, and add this:
 
 ```python
 import codecs,re
@@ -331,6 +334,9 @@ class Thing {
         self.target = target;
     }
     def stuff(self) {
+        print("Hello %s!" % self.target);
+    }
+    async def async_stuff(self) {
         print("Hello %s!" % self.target);
     }
 }
