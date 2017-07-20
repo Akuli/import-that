@@ -406,10 +406,7 @@ Hello World!
 
 ## Exercises
 
--   Currently `if (thing) { }` doesn't work and you need to do `if (thing) { pass; }`
-    instead. Fix this. Make sure that `thing = { };` creates an empty dictionary.
-
-**Note:** Rest of these exercises are all about adding new features. If dumping
+**Note:** These exercises are all about adding new features. If dumping
 everything into one class feels too complicated you can also go through the
 token list in separate functions before using the `CodeFixer` class. It only
 cares about the token types and strings, so you can create new tokens like this:
@@ -419,6 +416,9 @@ cares about the token types and strings, so you can create new tokens like this:
 >>> tokenize.TokenInfo(tokenize.STRING, '"wolo"', None, None, None)
 TokenInfo(type=3 (STRING), string='"wolo"', start=None, end=None, line=None)
 ```
+
+-   Currently `if (thing) { }` doesn't work and you need to do `if (thing) { pass; }`
+    instead. Fix this. Make sure that `thing = { };` creates an empty dictionary.
 
 -   Another common complaint about Python's syntax is that lambdas are limited
     to one line. That makes parsing the indentation based code a lot simpler.
@@ -484,7 +484,8 @@ TokenInfo(type=3 (STRING), string='"wolo"', start=None, end=None, line=None)
     ```
 
     The default values for `INIT`, `COND` and `INCR` should be `pass`, `True`
-    and `pass`, respectively.
+    and `pass`, respectively. `INCR;` should be also called before `continue`,
+    but not before a `continue` of a nested loop (also applies to while loops).
 
     Examples:
 
@@ -495,4 +496,16 @@ TokenInfo(type=3 (STRING), string='"wolo"', start=None, end=None, line=None)
     for (;;;) { ... }                   # AssertionError: too many semicolons in for(...)
     for (;) { ... }                     # AssertionError: not enough semicolons in for(...)
     for (thing = ";;";;) { ... }        # OK because the semicolons are in a string
+
+    # print odd numbers using continue
+    for (i=0; i<10; i+=1) {
+        if (i%2==0) { continue; }
+        print(i);
+    }
+
+    # nested continues must not be INCR'd, this should print numbers 1 to 5
+    for (i=1; i<=5, i+=1) {
+        for (lel in range(10)) { continue; }  # this continue should not i+=1
+        print(i);
+    }
     ```
