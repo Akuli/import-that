@@ -122,7 +122,6 @@ class MutableString(list):
 class Stack(list):
     push = list.append
 
-
 class HandyDandyTokenIteratorThingyThing:
     # handy dandy init
     def __init__(self,tokens):
@@ -175,7 +174,7 @@ class CodeFixer:
                 if token[1] in ( 'class', 'def' ):
                     funcname = self.do_token()
                     import keyword
-                    assert funcname[0]==tokenize.NAME and not( keyword.iskeyword(funcname[1]) ), "'%s' is not a valid function name" % funcname[1]
+                    assert funcname[0]==tokenize.NAME and not( keyword.iskeyword(funcname[1]) ), "'%s' is not a valid function name" %( funcname[ 1] )
                     if self.tokens.coming_up[1] == '(':
                         # class Thing(...) { ... }
                         # def thing(...) { ... }
@@ -382,10 +381,10 @@ class Thing {
     def __init__(self, target) {
         self.target = target;
     }
-    def stuff(self) {
+    def hello(self) {
         print("Hello %s!" % self.target);
     }
-    async def async_stuff(self) {
+    async def async_hello(self) {
         print("Hello %s!" % self.target);
     }
 }

@@ -14,8 +14,6 @@ things, you will learn some useless skills and bad habits:
 Here's an example from [the brace tutorial](fun/braces.md):
 
 ```python
-import tokenize,io
-
 # beautiful, idiomatic and overall really pythonic utility
 # classes, use these everywhere you can
 class MutableString(list):
@@ -23,14 +21,15 @@ class MutableString(list):
 class Stack(list):
     push = list.append
 
-...
+class HandyDandyTokenIteratorThingyThing:
 
-if token[0] == tokenize.NAME and token[1] in ( 'if', 'elif', 'else', 'while', 'for', 'with', 'try', 'except', 'finally', 'class', 'def' ):
-    ...
-    if token[1] in ( 'class', 'def' ):
-        funcname = self.do_token()
-        import keyword
-        assert funcname[0]==tokenize.NAME and not( keyword.iskeyword(funcname[1]) ), "'%s' is not a valid function name" % funcname[1]
+        ...
+
+            if token[0] == tokenize.NAME and token[1] in ( 'if', 'elif', 'else', 'while', 'for', 'with', 'try', 'except', 'finally', 'class', 'def' ):
+                    ...
+                    funcname = self.do_token()
+                    import keyword
+                    assert funcname[0]==tokenize.NAME and not( keyword.iskeyword(funcname[1]) ), "'%s' is not a valid function name" %( funcname[ 1] )
 ```
 
 And here's an example of the metaprogramming, taken from the same tutorial.
@@ -44,10 +43,10 @@ class Thing {
     def __init__(self, target) {
         self.target = target;
     }
-    def stuff(self) {
+    def hello(self) {
         print("Hello %s!" % self.target);
     }
-    async def async_stuff(self) {
+    async def async_hello(self) {
         print("Hello %s!" % self.target);
     }
 }
