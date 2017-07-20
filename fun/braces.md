@@ -123,7 +123,7 @@ class Stack(list):
     push = list.append
 
 
-class _HandyDandyTokenIteratorThingyThing:
+class HandyDandyTokenIteratorThingyThing:
     # handy dandy init
     def __init__(self,tokens):
         self.iterator=( t for t in tokens if not t[0] in{ tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT })
@@ -154,7 +154,7 @@ class CodeFixer:
     close2open=dict(map( (lambda item: item[::-1] ), open2close.items()))
 
     def __init__(self, tokens):
-        self.tokens = _HandyDandyTokenIteratorThingyThing(tokens)
+        self.tokens = HandyDandyTokenIteratorThingyThing(tokens)
         (self.indent, self.output) = (0, MutableString())
         while self.tokens: self.do_token()
 
@@ -164,43 +164,37 @@ class CodeFixer:
             self.press_enter()
         else:
             self.output.extend(token[1] + ' ')
-            if token[0] == tokenize.NAME:
-                if token[1] in ( 'if', 'while', 'for' ):
-                    # this removes the outermost parentheses
-                    # if (stuff) { ... }   ->   if stuff: ...
+            if token[0] == tokenize.NAME and token[1] in ( 'if', 'elif', 'else', 'while', 'for', 'with', 'try', 'except', 'finally', 'class', 'def' ):
+                if token[1] in ( 'if', 'elif', 'while', 'for', 'with', 'except' ):
+                    # keyword (stuff) { ... }   ->   keyword stuff: ...
+                    # note that parentheses around stuff are removed
                     paren = next(self.tokens)   # skip '('
-                    assert paren[:2] == ( tokenize.OP, '(' ), paren
+                    assert paren[:2] == ( tokenize.OP, '(' ), "should be '(', not '%s'"%paren[ 1 ]
                     self.do_braces(')')
                     next(self.tokens)           # skip ')'
-                    self.output.append(':')
-                    self.press_enter()
-                    assert self.tokens.coming_up[:2] == ( tokenize.OP, '{' ), self.tokens.coming_up
-                    next(self.tokens)           # skip '{'
-                    self.press_tab()
-                    self.do_braces('}')
-                    next(self.tokens)           # skip '}'
-                    self.press_shift_tab()
                 if token[1] in ( 'class', 'def' ):
                     funcname = self.do_token()
                     import keyword
-                    assert funcname[0]==tokenize.NAME and not( keyword.iskeyword(funcname[1]) )
+                    assert funcname[0]==tokenize.NAME and not( keyword.iskeyword(funcname[1]) ), "'%s' is not a valid function name" % funcname[1]
                     if self.tokens.coming_up[1] == '(':
                         # class Thing(...) { ... }
                         # def thing(...) { ... }
                         paren = self.do_token()     # include '('
-                        assert paren[:2] == ( tokenize.OP, '(' ), paren
+                        assert paren[:2] == ( tokenize.OP, '(' ), "should be '(', not '%s'" % (paren[1])
                         self.do_braces(')')
                         self.do_token()             # include ')'
                     else:
                         # class Thing { ... }
                         # def thing { ... }     # ERROR
                         assert token[1] != 'def', "should be 'def %s(...)', not 'def %s%s...'"%( funcname[1], funcname[1], self.tokens.coming_up[1] )
-                    self.output.append(':')
-                    self.press_enter()
-                    assert self.tokens.coming_up[:2] == ( tokenize.OP, '{' ), "missing '{'"
-                    next(self.tokens); self.press_tab()         # tab instead of '{'
-                    self.do_braces('}')
-                    next(self.tokens); self.press_shift_tab()   # shift+tab instead of '}'
+                self.output.append(':')
+                self.press_enter()
+                brace = next(self.tokens)   # skip '{'
+                assert brace[:2] == ( tokenize.OP, '{' ), "should be '{', not '%s'"%brace[ 1]
+                self.press_tab()
+                self.do_braces('}')
+                next(self.tokens)           # skip '}'
+                self.press_shift_tab()
         return token
 
     # processes tokens until closing_brace, leave the closing brace in self.tokens
@@ -224,12 +218,10 @@ class CodeFixer:
         assert False, "there should be a '%s' before end of file" %closing_brace
 
     def press_tab(self):
-        #print('TAB', self.indent, '->', self.indent+1)
         self.indent += 1
         self.output.append('\t')
 
     def press_shift_tab(self):
-        #print('SHIFT TAB', self.indent, '->', self.indent-1)
         assert self.indent >= 1, "too many '}' characters"
         self.indent -= 1
         assert self.output.pop() == '\t'
@@ -250,7 +242,7 @@ fix_code(b'''
   thing( ) {
         if (stuff) {
       things; }}
-  def stuff() { pass; }      # lol we really need this pass
+  def stuff() { pass; }      # we really need this pass, see exercises below
 
 class Thing {
     def stuff(self) {
@@ -262,64 +254,121 @@ class Thing {
             print(i);
         }
     }
+
+    def things(self) {
+        try {
+            1 / 0;
+        } except (ZeroDivisionError as e) {
+            print(e);
+        }
+    }
 }
 Thing().stuff();
+Thing().things();
 ''')
 ```
 
 Let's run it:
 
-    akuli@Akuli-Desktop:~$ python3 braces.py
-    def thing ( ) :
-            if stuff :
-                    things 
-    def stuff ( ) :
-            pass 
-    class Thing :
-            def stuff ( self ) :
-                    for letter in 'abc' :
-                            print ( letter ) 
-                    i = 0 
-                    while i < 10 :
-                            i += 1 
-                            print ( i ) 
-    Thing ( ) . stuff ( ) 
+```
+akuli@Akuli-Desktop:~$ python3 braces.py
+def thing ( ) :
+    if stuff :
+        things 
+def stuff ( ) :
+    pass 
+class Thing :
+    def stuff ( self ) :
+        for letter in 'abc' :
+            print ( letter ) 
+        i = 0 
+        while i < 3 :
+            i += 1 
+            print ( i ) 
+    def things ( self ) :
+        try :
+            1 / 0 
+        except ZeroDivisionError as e :
+            print ( e ) 
+Thing ( ) . stuff ( ) 
+Thing ( ) . things ( ) 
 
-That is kind of anti-PEP8, but it looks like valid Python syntax. Let's see what
-happens if we run it:
+akuli@Akuli-Desktop:~$
+```
 
-    akuli@Akuli-Desktop:~$ python3 braces.py | python3
-    a
-    b
-    c
-    1
-    2
-    3
+That code violates PEP-8 even worse than our `braces.py`, but it seems to be
+valid Python syntax. Let's run it and see what happens.
 
-Great! Now we just need some [basic codec
-stuff](../boring/encodings.md#custom-encodings) and we're done.
+```
+akuli@Akuli-Desktop:~$ python3 braces.py | python3
+a
+b
+c
+1
+2
+3
+division by zero
+akuli@Akuli-Desktop:~$
+```
+
+Great, it works!
+
+If you fear braces for some reason, note that our code converts braces to colons
+and indents, so if you need to work with someone's brace code you can convert it
+to indent-based code first. You can also use autopep8:
+
+```
+akuli@Akuli-Desktop:~$ python3 braces.py | autopep8 --aggressive --experimental -
+def thing():
+    if stuff:
+        things
+
+
+def stuff():
+    pass
+
+
+class Thing:
+    def stuff(self):
+        for letter in 'abc':
+            print(letter)
+        i = 0
+        while i < 3:
+            i += 1
+            print(i)
+
+    def things(self):
+        try:
+            1 / 0
+        except ZeroDivisionError as e:
+            print(e)
+
+
+Thing() . stuff()
+Thing() . things()
+```
 
 ## The Codec
 
-Delete the `fix_code` function and everything after it, and add this:
+Now we just need some [basic codec
+stuff](../boring/encodings.md#custom-encodings) and we're done. Delete the
+`fix_code` function and everything after it, and add this:
 
 ```python
 import codecs,re
 
 def encode(string, errors='strict'):
-    raise NotImplementedError("cannot create brace code from non-brace code :(")
+    raise NotImplementedError ("cannot create brace code from non-brace code :(")
 
 def decode(byteslike, errors='strict'):
     code_bytes = bytes(byteslike)
 
-    # if the code starts with a braces encoding comment, delete it to avoid infinite recursion
-    # regex comes from here: https://www.python.org/dev/peps/pep-0263/#defining-the-encoding
-    if re.search(b'^[ \t\v]*#.*?coding[:=][ \t]*braces', code_bytes):
-        code_bytes = code_bytes.split(b'\n', 1)[1]
-
+    # there's no need to delete the encoding comment because we're adding a '(' to
+    # the beginning, and only ASCII whitespace can occur before encoding comments
+    # if you delete the '(', tokenize reuses the encoding comment and we have
+    # infinite recursion :D
     tokens = list(tokenize.tokenize(io.BytesIO(b'(' + code_bytes + b')').readline))
-    fixer = CodeFixer(tokens[2:-2])
-    return (str(fixer.output), len(byteslike))
+    return (str(CodeFixer(tokens[2:-2]).output), len(code_bytes))
 
 codec_info = codecs.CodecInfo(encode, decode, name='braces')
 codecs.register({'braces': codec_info}.get)
@@ -354,3 +403,96 @@ Hello World!
 ...
 Hello World!
 ```
+
+## Exercises
+
+-   Currently `if (thing) { }` doesn't work and you need to do `if (thing) { pass; }`
+    instead. Fix this. Make sure that `thing = { };` creates an empty dictionary.
+
+**Note:** Rest of these exercises are all about adding new features. If dumping
+everything into one class feels too complicated you can also go through the
+token list in separate functions before using the `CodeFixer` class. It only
+cares about the token types and strings, so you can create new tokens like this:
+
+```python
+>>> import tokenize
+>>> tokenize.TokenInfo(tokenize.STRING, '"wolo"', None, None, None)
+TokenInfo(type=3 (STRING), string='"wolo"', start=None, end=None, line=None)
+```
+
+-   Another common complaint about Python's syntax is that lambdas are limited
+    to one line. That makes parsing the indentation based code a lot simpler.
+    Add new function syntax so that this...
+
+    ```python
+    stuff.sort(key=def(item) {
+        return item.thing;
+    });
+    ```
+
+    ...is equivalent to this:
+
+    ```python
+    def __temp(item) {
+        return item.thing;
+    }
+    stuff.sort(key=__temp);
+    del __temp;
+    ```
+
+    Make sure that this doesn't conflict with other variables defined in the
+    file (`__temp = 'lel'` works) and the function expressions can be nested
+    (e.g. `def() { def() { ... } }`).
+
+-   While you're at it, also add nicer lambdas. This...
+
+    ```python
+    stuff.sort(key = (item)=>item.thing()+"lol", reverse=True);
+    ```
+
+    ...should be equivalent to this:
+
+    ```python
+    stuff.sort(key = lambda item: item.thing()+"lol", reverse=True);
+    ```
+
+    The left side of `=>` is just like a `def` argument list. Anything that can
+    be after `lambda` should also work after a `=>`.
+
+    **Hint:** One problem with this is that the `lambda` keyword needs to be
+    inserted before the argument list. When `CodeFixer.do_token()` receives a
+    `(` token, it should do something like `self.last_paren = len(self.output)`
+    before adding the `(` to `self.output`. Then you can do something like
+    `self.output[self.last_paren:self.last_paren+1] = 'lambda'`.
+
+-   Add traditional for loops. This...
+
+    ```python
+    for (INIT; COND; INCR) {
+        ...
+    }
+    ```
+
+    ...should be equivalent to this:
+
+    ```python
+    INIT;
+    while (COND) {
+        ...
+        INCR;
+    }
+    ```
+
+    The default values for `INIT`, `COND` and `INCR` should be `pass`, `True`
+    and `pass`, respectively.
+
+    Examples:
+
+    ```python
+    for (i=0; i<10; i+=1) { print(i); } # the classic :)
+    for (i in range(10)) { print(i); }  # this must work too
+    for (;;) { ... }                    # infinite loop
+    for (;;;) { ... }                   # AssertionError: too many semicolons in for(...)
+    for (;) { ... }                     # AssertionError: not enough semicolons in for(...)
+    for (thing = ";;";;) { ... }        # OK because the semicolons are in a string
+    ```

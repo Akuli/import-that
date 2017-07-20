@@ -92,15 +92,17 @@ work just fine with [globals()][]:
 We'll make something that turns this...
 
 ```python
-implicit def thing():
-    stuff
+implicit class Thing:
+    def stuff(a, b):
+        ...
 ```
 
 ...into this:
 
 ```python
-def thing(self):
-    stuff
+class Thing:
+    def stuff(self, a, b):
+        ...
 ```
 
 We can't use [the AST][ast] for this because trying to `ast.parse` code with
@@ -110,85 +112,104 @@ possible.
 
 ## Code Manipulation with Tokens
 
-Here's the code that will handle our new `implicit` keyword. Let's write this
-code to `that.py`:
+Here's the code that will handle our new `implicit` keyword. Save this to
+`implicit.py`:
 
 ```python
 import tokenize,io
 
-# this is a really good idiom, use this everywhere you can
-class MutableString(list):
-    def __str__(self):
-        return ''.join(self)
-
 def fix_code(code_bytes):
-    code_lines = list(map(MutableString, str(code_bytes, 'utf-8').split('\n')))
+    tokens = tokenize.tokenize(io.BytesIO(code_bytes).readline)
+    encoding_token = next(tokens)
+
+    code_lines = str(code_bytes, encoding_token[1]).split('\n')
     code_lines.insert(0, None)      # token line numbers start at 1
 
-    tokens = tokenize.tokenize(io.BytesIO(code_bytes).readline)
-    next(tokens)    # skip encoding token
+    indent_level = 0 #  how many tabs (or 4-space chunks or whatever) currently indented
+    implicit_level = None #where the implicit class started
 
-    for implicit in tokens:
-        if implicit[:2] == (tokenize.NAME, 'implicit'):
-            the_def = next(tokens)
-            if the_def[:2] != (tokenize.NAME, 'def'):
-                # implicit is used as a variable name because it's not before a def
+    for token in tokens:
+        if token[:2] == (tokenize.NAME, 'implicit'):
+            classs = next(tokens)
+            if classs[:2] != (tokenize.NAME, 'class'):
+                # implicit is used as a variable name
                 continue
 
+            # we need to delete the implicit keyword like this:
+            #
+            #   implicit class Thing: ...
+            #   ^^^^^^^^^
+            # as you can see, from beginning of implicit to beginning of class
+            (lineno, start), (lineno2, end) = token.start, classs.start
+            assert lineno == lineno2, "'implicit' and 'class' on different lines"
+            code_lines[lineno] = code_lines[lineno][:start] + code_lines[lineno][end:]
+
+            if implicit_level==None:
+                # start of a new class that is not inside another class
+                implicit_level = indent_level
+
+        if token[:2] == (tokenize.NAME, 'def') and implicit_level is not None:
             func_name = next(tokens); assert func_name[0] == tokenize.NAME
             paren = next(tokens); assert paren[:2] == (tokenize.OP, '(')
-
-            # self must be inserted first because deleting stuff before it
-            # changes the indexes
             line, column = paren.end
-            code_lines[line].insert(column, 'self,')
-
-            # we need to delete 'implicit' and the space after it to avoid
-            # screwing up indentation
-            #
-            #     implicit def stuff(): ...
-            #     ^^^^^^^^^
-            #
-            # as you can see, from beginning of implicit to beginning of def
-            assert implicit.start[0] == the_def.start[0]   # must be on the same line
-            code_lines[ the_def.start[0] ][ implicit.start[1] : the_def.start[1] ] = ''
+            code_lines[line] = code_lines[line][:column] + 'self,' + code_lines[line][column:]
+        if token[0] == tokenize.INDENT:
+            indent_level += 1
+        if token[0] == tokenize.DEDENT:
+            indent_level -= 1
+            if indent_level == implicit_level:
+                # end of class definition
+                implicit_level = None
 
     return '\n'.join(map(str, code_lines[1:]))
 
 
 if __name__ == '__main__': print(fix_code(b'''
-class Thing:
-    implicit def __init__(a, b):
+implicit class Thing:
+    def __init__(a, b):
         self.a = a
         self.b = b
 
-    # also works with async functions :D
-    # comment this out if your python is too old for async functions
-    async implicit def stuff():
+    def stuff():
         pass
 
-    def normal(self):
-        print("hi")
+    # also works with async functions :D comment this out if your
+    # python is too old for async functions
+    async def async_stuff()
+        pass
+
+def normal():    # no self
+    pass
 '''))
 ```
 
-There's not much magic going on in this code. If you read [the boring tokenizing
-chapter][tokenize] you should have no trouble understanding this.
+If you have read [the boring tokenizing chapter][tokenize] you should have no
+trouble understanding this.
+
+Here's the output:
+
+```python
+class Thing:
+    def __init__(self,a, b):
+        self.a = a
+        self.b = b
+
+    def stuff(self,):
+        pass
+
+    # also works with async functions :D
+    # comment this out if your python is too old for async functions
+    async def async_stuff(self,)
+        pass
+
+def normal():    # no self
+    pass
+```
 
 ## The Encoding
 
-Next we'll add a convenient way to use the `implicit` keyword in our code.
-Modify your `fix_code` in `that.py` to also accept a new `decoding_errors`
-argument:
-
-```python
-def fix_code(code_bytes, decoding_errors):
-    code_lines = list(map(MutableString, str(code_bytes, 'utf-8', decoding_errors).split('\n')))
-    # rest of this function doesn't need to be changed
-```
-
-Then delete the `if __name__ == '__main__'` thing and add some [basic codec
-stuff][encodings]:
+Delete the `if __name__ == '__main__'` line and everything after it, and add
+some [basic codec stuff][encodings]:
 
 ```python
 import codecs
@@ -210,63 +231,46 @@ Now we just need a file that we can test this with. Here's `test.py`:
 ```python
 # coding=implicit
 
-class Thing:
+implicit class Test:
 
-    implicit def __init__(name):
-        self.name = name
+    def __init__(target):
+        self.target = target
 
-    implicit def hello():
-        print("Hello %s!" % self.name)
+    def hello():
+        print("Hello %s!" % self.target)
 
-    async implicit def async_hello():
-        print("Hello %s!" % self.name)
+    async def async_hello():
+        print("Hello %s!" % self.target)
 ```
 
 Let's try it out.
 
 ```python
->>> import that
+>>> import implicit
 >>> import test
->>> test.Thing("World").hello()
+>>> test.Test("World").hello()
 Hello World!
->>> import contextlib
->>> with contextlib.suppress(StopIteration):
-...     test.Thing("World").async_hello().send(None)
+>>> with __import__('contextlib').suppress(StopIteration):
+...     test.Test("World").async_hello().send(None)
 ... 
 Hello World!
 ```
 
 ## Exercises
 
-1.  `implicit def thing()` is annoying and repetitive to type. Implement an
-    `implicit class` syntax.
-
-    Instead of this...
+-   Currently nested functions don't work in implicit classes:
 
     ```python
-    # coding=implicit
-    class Thing:
-        implicit def __init__():
-            ...
-        implicit def stuff():
-            ...
-    ```
-
-    ...it should be possible to do this:
-
-    ```python
-    # coding=implicit
     implicit class Thing:
-        def __init__():
-            ...
         def stuff():
-            ...
+            def inner():      # this also gets a self parameter :(
+                print("hi")
+            inner()     # error!
     ```
 
-    You don't need to support `implicit def` functions, implicit classes are
-    enough.
+    Fix this. It's easier than you think it is.
 
-2.  Typically static methods are defined with the `@staticmethod` decorator.
+-   Typically static methods are defined with the `@staticmethod` decorator.
     Implement Java-style syntax that work like this:
 
     ```python
@@ -278,9 +282,8 @@ Hello World!
     Thing().stuff()     # also prints hello
     ```
 
-    Your implementation doesn't need to be compatible with the `implicit`
-    keyword. It doesn't matter if adding `staticmethod = 'lol'` before the class
-    definition screws things up.
+    Make sure that your implementation works if the user does
+    `staticmethod = 'lol'`. somewhere
 
 [inspect.getsource()]: https://docs.python.org/3/library/inspect.html#inspect.getsource
 [locals()]: https://docs.python.org/3/library/functions.html#locals

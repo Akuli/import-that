@@ -1,5 +1,12 @@
 # Backwards Compatible f-strings
 
+**Note:** This tutorial is kind of a failure :( It's way more complicated than
+it needs to be, and [similar but better
+things](https://github.com/syrusakbary/interpy) existed before f-strings were
+added to Python. You can still read this tutorial if you are interested in my
+stupid approach to it. Thanks (I guess?) to
+[Summertime](https://github.com/Summertime/) for pointing this out.
+
 You need Python 3.5 or **older** if you want to try out the example code
 in this tutorial.
 
@@ -106,13 +113,13 @@ True
 
 ## Importing stuff
 
-Our `that.py` file will define a `do_the_f` function that fetches variables like
+Our `fstrings.py` file will define a `do_the_f` function that fetches variables like
 `get_vars()` and formats a string with them. A simple way to call it would be to
-add `import that` at the top of the file when decoding, and then replace all
+add `import fstrings` at the top of the file when decoding, and then replace all
 occurances of `f'something'` with `that.do_the_f('something')`. But everything
 screws up if someone does `that = 'lol'`.
 
-We could `import that as __that` or something, but there's a better solution.
+We could `import fstrings as __that` or something, but there's a better solution.
 [The built-in `__import__` function][__import__] imports and returns a module:
 
 ```python
@@ -161,7 +168,7 @@ LOADING LOL
 LOADING LOL
 ```
 
-This is useful because our `that.py` can output code that imports `that`, but
+This is useful because our `fstrings.py` can output code that imports `that`, but
 it's loaded only once.
 
 The `__name__` variable is also set to the module name such that
@@ -169,7 +176,7 @@ The `__name__` variable is also set to the module name such that
 
 ## The Code
 
-Here's `that.py`:
+Here's `fstrings.py`:
 
 ```python
 import inspect,collections,codecs,sys,tokenize,io
@@ -226,7 +233,7 @@ print(f"Hello {target}!")
 Let's try it out.
 
 ```python
->>> import that
+>>> import fstrings
 >>> import test
 Hello World!
 ```
@@ -273,7 +280,7 @@ print(f"Hello {input('Enter something -->  ')}!")
 Let's try it out.
 
 ```python
->>> import that
+>>> import fstrings
 >>> import test
 Enter something -->  blah
 Hello blah!
@@ -316,7 +323,7 @@ Annoyingly, the `\\x3a` thing doesn't work with Python 3.6 f-strings:
 ```python
 >>> import sys;sys.version
 '3.7.0a0 (heads/master-dirty:f2ffae1, Jul  1 2017, 12:46:13) \n[GCC 4.8.4]'
->>> import that        # our f encoding is just like utf-8 on this python
+>>> import fstrings        # our f encoding is just like utf-8 on this python
 >>> import test
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -338,13 +345,13 @@ f'{1/0}'
 ...we get this:
 
 ```python
->>> import that
+>>> import fstrings
 >>> import test
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "/home/akuli/import-that/fstrings/test.py", line 2, in <module>
     f'{1/0}'
-  File "/home/akuli/import-that/fstrings/that.py", line 9, in do_the_f
+  File "/home/akuli/import-that/fstrings/fstrings.py", line 9, in do_the_f
     return string.format_map(FDict(frame.f_globals, frame.f_locals))
 KeyError: '1/0'
 ```
@@ -440,21 +447,21 @@ else:
 Let's see how it works.
 
 ```python
->>> import that
+>>> import fstrings
 >>> import test
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "/home/akuli/import-that/fstrings/test.py", line 2, in <module>
     f'{1/0}'
-  File "/home/akuli/import-that/fstrings/that.py", line 20, in do_the_f
+  File "/home/akuli/import-that/fstrings/fstrings.py", line 20, in do_the_f
     except KeyError: raise fdict.error from None
-  File "/home/akuli/import-that/fstrings/that.py", line 11, in __getitem__
+  File "/home/akuli/import-that/fstrings/fstrings.py", line 11, in __getitem__
     return eval(codeobject,self.globalz,self.localz)
   File "<f-string>", line 1, in <module>
 ZeroDivisionError: division by zero
 ```
 
-We still have some lines from `that.py` in our traceback, but this is much
+We still have some lines from `fstrings.py` in our traceback, but this is much
 better than the KeyError we had before.
 
 [tokenize]: ../boring/how-python-runs-code.md#tokenizing

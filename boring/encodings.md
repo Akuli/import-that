@@ -58,7 +58,7 @@ if you have `print 'öß'` in a file that you are trying to run in Python 2, you
 get an error like this:
 
       File "thing.py", line 1
-    SyntaxError: Non-ASCII character '\xc3' in file that.py on line 1, but no
+    SyntaxError: Non-ASCII character '\xc3' in file thing.py on line 1, but no
     encoding declared; see http://www.python.org/peps/pep-0263.html for details
 
 The link contains some details about changing this encoding. If you add a
@@ -79,7 +79,8 @@ else:
     print 'öß'.decode('utf-8').encode(sys.stdout.encoding)
 ```
 
-This is one of the reasons why I like Python 3. I can just `print('öß')` and it works.
+This is one of the reasons why I like Python 3. I can just `print('öß')` and it
+works.
 
 ## Custom encodings
 
@@ -88,45 +89,64 @@ it's also possible to create our *own* encodings and use them in encoding
 comments. Let's make an encoding that is otherwise like UTF-8, but converts
 UPPERCASE to lowercase and lowercase to UPPERCASE.
 
-Here's `that.py`:
+Here's `swapcase.py`:
 
 ```python
-import codecs
-
+import codecs, re
 utf8 = codecs.lookup('utf-8')
 
 # str -> bytes
+# usually this isn't called at all when importing or tokenizing something
 def encode(string, errors='strict'):
     return utf8.encode(string.swapcase(), errors)
 
 # kinda bytes-ish -> (str, how many bytes were decoded)
+# this is called when a file with this encoding is imported (see below)
 def decode(byteslike, errors='strict'):
     string, bytes_used = utf8.decode(byteslike, errors)
     return (string.swapcase(), bytes_used)
 
-that_info = codecs.CodecInfo(encode, decode, name='that')
-codecs.register({'that': that_info}.get)
+codec_info = codecs.CodecInfo(encode, decode, name='swapcase')
+codecs.register({'swapcase': codec_info}.get)
 ```
 
 Not everything works with our codec because we didn't implement
-[incrementalencoder and other stuff like that][CodecInfo], but most of the time
-this is good enough.
+[incrementalencoder and other stuff like
+that](https://docs.python.org/3/library/codecs.html#codecs.CodecInfo),
+but most of the time this is good enough.
 
 Here's `test.py`:
 
 ```python
-# coding=that
+# coding=swapcase
 DEF HELLO():
     PRINT("hELLO wORLD!")
 ```
 
-Let's try it out:
+Let's try it out.
 
 ```python
->>> import that      # needs to be imported before test
->>> import test
+>>> import swapcase
+>>> b'hELLO wORLD'.decode('swapcase')
+'Hello World'
+>>> import test     # needs to be imported after swapcase
 >>> test.hello()
 Hello World!
 ```
 
-[CodecInfo]: https://docs.python.org/3/library/codecs.html#codecs.CodecInfo
+## Cache Issues
+
+If you import everything as above, then add a print to the `decode()` function
+in `swapcase.py` and import everything again, your print doesn't actually run.
+The problem is that Python cached our `test` module to a folder named
+`__pycache__` *after* decoding it, and it didn't notice that we changed
+`swapcase.py`. This wouldn't have happened if we had changed `test.py` because
+Python's encodings aren't meant to be changed as aften as we change them.
+
+So, if you have weird codec issues and your encoding doesn't even run, delete
+the `__pycache__` folder and everything will work. This one-liner is an easy way
+to do that from within Python:
+
+```python
+>>> __import__('shutil').rmtree('__pycache__', ignore_errors=True)
+```

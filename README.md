@@ -23,21 +23,20 @@ class MutableString(list):
 class Stack(list):
     push = list.append
 
+...
 
-class _HandyDandyTokenIteratorThingyThing:
-    # handy dandy init
-    def __init__(self,tokens):
-        self.iterator=( t for t in tokens if not t[0] in{ tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT })
-        self._coming_up = None
-
-    # handy dandy property
-    @property
-    def coming_up(self):
-        ...
+if token[0] == tokenize.NAME and token[1] in ( 'if', 'elif', 'else', 'while', 'for', 'with', 'try', 'except', 'finally', 'class', 'def' ):
+    ...
+    if token[1] in ( 'class', 'def' ):
+        funcname = self.do_token()
+        import keyword
+        assert funcname[0]==tokenize.NAME and not( keyword.iskeyword(funcname[1]) ), "'%s' is not a valid function name" % funcname[1]
 ```
 
 And here's an example of the metaprogramming, taken from the same tutorial.
 **This file can be imported** after importing another file that does the magic.
+You can also import any other modules from files like this and in general do
+pretty much everything that you can in normal Python files.
 
 ```python
 # coding=braces
